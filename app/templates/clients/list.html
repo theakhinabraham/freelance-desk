@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Clients · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Clients</h1>
+  <a class="btn primary" href="/clients/new">+ New client</a>
+</div>
+
+{% if clients %}
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr><th>Name</th><th>Email</th><th>Phone</th><th class="num">Active</th><th class="num">Projects</th></tr>
+  </thead>
+  <tbody>
+    {% for c in clients %}
+    <tr>
+      <td><a href="/clients/{{ c.id }}">{{ c.name }}</a></td>
+      <td>{{ c.email or "—" }}</td>
+      <td>{{ c.phone or "—" }}</td>
+      <td class="num">{{ c.active_count }}</td>
+      <td class="num">{{ c.project_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="card empty">No clients yet. <a href="/clients/new">Add your first client</a>.</div>
+{% endif %}
+{% endblock %}

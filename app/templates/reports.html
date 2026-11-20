@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Reports · FreelanceDesk{% endblock %}
+
+{% macro cell(key, value) -%}
+  {%- if value is none -%}—
+  {%- elif key.endswith("_paise") -%}{{ value|inr }}{{ "/h" if "rate" in key }}
+  {%- elif key == "minutes" -%}{{ value|hours }}
+  {%- elif key == "share_pct" -%}{{ value }}%
+  {%- elif key in ("over_estimate",) -%}{{ "Yes" if value else "No" }}
+  {%- else -%}{{ value }}{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <h1>SQL reports</h1>
+  <span class="muted small">Each report runs the named query in <code>db/reports.sql</code>, scoped to your account.</span>
+</div>
+
+{% for report in reports %}
+<section class="report" id="{{ report.name }}">
+  <h2>{{ report.title }}</h2>
+
+  {% if report.name == "projects_needing_attention" %}
+  <form method="get" action="/reports#projects_needing_attention" class="inline-form">
+    <label for="threshold">Rate threshold (₹/h)</label>
+    <input id="threshold" name="threshold" value="{{ threshold_paise|rupees_input }}" inputmode="decimal">
+    <button type="submit" class="btn">Apply</button>
+  </form>
+  {% endif %}
+
+  {% if report.rows %}
+  {% set columns = report.rows[0].keys() | reject("in", ["project_id", "client_id", "invoice_id"]) | list %}
+  <div class="table-wrap">
+  <table class="table compact">
+    <thead><tr>{% for col in columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for row in report.rows %}
+      <tr>{% for col in columns %}<td>{{ cell(col, row[col]) }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="card empty">No rows.</div>
+  {% endif %}
+
+  <details>
+    <summary>Show the SQL and explanation</summary>
+    <pre class="sql-comment">{{ queries[report.name].comment }}</pre>
+    <pre class="sql">{{ queries[report.name].sql }}</pre>
+  </details>
+</section>
+{% endfor %}
+{% endblock %}

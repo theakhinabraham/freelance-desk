@@ -1,0 +1,42 @@
+{# Start/stop card. Needs: running, elapsed. Optional: project (fixes the project), projects (dropdown). #}
+<div class="card timer {{ 'is-running' if running }}">
+  {% if running %}
+    <div>
+      <div class="timer-label">Timer running</div>
+      <div class="timer-value">{{ elapsed|hours }}</div>
+      <div class="muted">
+        <a href="/projects/{{ running.project_id }}">{{ running.project_title }}</a>
+        · {{ running.client_name }} · since {{ running.started_at[11:16] }}
+        {% if running.description %} · {{ running.description }}{% endif %}
+      </div>
+    </div>
+    <form method="post" action="/time/stop" class="inline">
+      {% if project %}<input type="hidden" name="return_to_project" value="{{ project.id }}">{% endif %}
+      <button type="submit" class="btn danger">■ Stop</button>
+    </form>
+  {% elif project %}
+    {% if project.status == "active" %}
+    <form method="post" action="/time/start" class="timer-form">
+      <input type="hidden" name="project_id" value="{{ project.id }}">
+      <input type="hidden" name="return_to_project" value="{{ project.id }}">
+      <input type="text" name="description" placeholder="What are you working on?" aria-label="Description">
+      <button type="submit" class="btn primary">▶ Start timer</button>
+    </form>
+    {% else %}
+    <span class="muted">Timers can only run on active projects.</span>
+    {% endif %}
+  {% else %}
+    {% if projects %}
+    <form method="post" action="/time/start" class="timer-form">
+      <select name="project_id" required aria-label="Project">
+        <option value="">Choose a project…</option>
+        {% for p in projects %}<option value="{{ p.id }}">{{ p.title }} · {{ p.client_name }}</option>{% endfor %}
+      </select>
+      <input type="text" name="description" placeholder="What are you working on?" aria-label="Description">
+      <button type="submit" class="btn primary">▶ Start timer</button>
+    </form>
+    {% else %}
+    <span class="muted">No active projects. <a href="/projects/new">Create one</a> to start tracking.</span>
+    {% endif %}
+  {% endif %}
+</div>

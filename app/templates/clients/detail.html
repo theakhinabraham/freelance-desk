@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}{{ client.name }} · FreelanceDesk{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/clients">Clients</a> /</p>
+<div class="page-head">
+  <h1>{{ client.name }}</h1>
+  <div class="actions">
+    <a class="btn" href="/clients/{{ client.id }}/edit">Edit</a>
+    <form method="post" action="/clients/{{ client.id }}/delete" class="inline"
+          onsubmit="return confirm('Delete this client?');">
+      <button type="submit" class="btn danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <dl class="facts">
+    <dt>Email</dt><dd>{{ client.email or "—" }}</dd>
+    <dt>Phone</dt><dd>{{ client.phone or "—" }}</dd>
+    <dt>Notes</dt><dd>{{ client.notes or "—" }}</dd>
+    <dt>Added</dt><dd>{{ client.created_at[:10] }}</dd>
+  </dl>
+</div>
+
+<div class="page-head">
+  <h2>Projects</h2>
+  <a class="btn" href="/projects/new?client_id={{ client.id }}">+ New project</a>
+</div>
+{% if projects %}
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Title</th><th>Billing</th><th class="num">Rate / price</th><th>Status</th><th>Deadline</th></tr></thead>
+  <tbody>
+    {% for p in projects %}
+    <tr>
+      <td><a href="/projects/{{ p.id }}">{{ p.title }}</a></td>
+      <td>{{ p.billing_type|capitalize }}</td>
+      <td class="num">
+        {% if p.billing_type == "hourly" %}{{ p.hourly_rate_paise|inr }}/h{% else %}{{ p.fixed_price_paise|inr }}{% endif %}
+      </td>
+      <td>{{ status_badge(p.status) }}</td>
+      <td>{{ p.deadline or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="card empty">No projects for this client yet.</div>
+{% endif %}
+{% endblock %}

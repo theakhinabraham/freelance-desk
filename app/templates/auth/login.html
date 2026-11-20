@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}Log in · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Log in</h1>
+  {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    {{ field("email", "Email", email, type="email", required=True, attrs='autocomplete="email"') }}
+    {{ field("password", "Password", type="password", required=True, attrs='autocomplete="current-password"') }}
+    <button type="submit" class="btn primary">Log in</button>
+  </form>
+  <p class="muted">No account? <a href="/register">Register</a></p>
+</div>
+{% endblock %}

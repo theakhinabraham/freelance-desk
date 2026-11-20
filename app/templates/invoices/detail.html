@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}{{ invoice.invoice_number }} · FreelanceDesk{% endblock %}
+{% block content %}
+{% set inv = invoice %}
+<p class="crumbs"><a href="/invoices">Invoices</a> /</p>
+<div class="page-head">
+  <h1>{{ invoice.invoice_number }} {% include "invoices/_status.html" %}</h1>
+  <div class="actions">
+    <a class="btn" href="/invoices/{{ invoice.id }}/pdf">Download PDF</a>
+    {% if invoice.status == "draft" %}
+    <form method="post" action="/invoices/{{ invoice.id }}/send" class="inline">
+      <button type="submit" class="btn primary">Mark as sent</button>
+    </form>
+    {% endif %}
+    {% if invoice.status in ("draft", "sent", "overdue") and invoice.paid_paise == 0 %}
+    <form method="post" action="/invoices/{{ invoice.id }}/cancel" class="inline"
+          onsubmit="return confirm('Cancel this invoice? Its hours become unbilled again.');">
+      <button type="submit" class="btn danger">Cancel invoice</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="stats">
+  <div class="card stat"><div class="stat-label">Amount</div><div class="stat-value">{{ invoice.amount_paise|inr }}</div></div>
+  <div class="card stat"><div class="stat-label">Paid</div><div class="stat-value">{{ invoice.paid_paise|inr }}</div></div>
+  <div class="card stat"><div class="stat-label">Balance due</div>
+    <div class="stat-value {{ 'text-bad' if invoice.status == 'overdue' }}">
+      {{ invoice.balance_paise|inr if invoice.status != "cancelled" else "—" }}</div></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <dl class="facts">
+    <dt>Client</dt><dd><a href="/clients/{{ invoice.client_id }}">{{ invoice.client_name }}</a></dd>
+    <dt>Project</dt><dd><a href="/projects/{{ invoice.project_id }}">{{ invoice.project_title }}</a></dd>
+    <dt>Issue date</dt><dd>{{ invoice.issue_date }}</dd>
+    <dt>Due date</dt><dd>{{ invoice.due_date }}</dd>
+    {% if logs %}<dt>Hours billed</dt><dd>{{ logs|sum(attribute="duration_minutes")|hours }} in {{ logs|length }} entries</dd>{% endif %}
+  </dl>
+</div>
+
+<h2>Payments</h2>
+{% if payments %}
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+    {% for p in payments %}
+    <tr>
+      <td>{{ p.paid_on }}</td>
+      <td>{{ method_labels[p.method] }}</td>
+      <td>{{ p.reference or "—" }}</td>
+      <td class="num">{{ p.amount_paise|inr }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="card empty">No payments yet.</div>
+{% endif %}
+
+{% if invoice.status in ("sent", "overdue") %}
+<h2 id="pay">Record a payment</h2>
+<div class="card">
+  {% if errors.form %}<div class="flash bad">{{ errors.form }}</div>{% endif %}
+  <form method="post" action="/invoices/{{ invoice.id }}/payments#pay">
+    <div class="row">
+      {{ field("amount", "Amount (₹)",
+               values.amount if values.amount is defined else values.amount_paise|rupees_input,
+               required=True, error=errors.amount, attrs='inputmode="decimal"',
+               hint="Full balance pre-filled. Enter less for a partial payment.") }}
+      {{ field("paid_on", "Paid on", values.paid_on, type="date", required=True, error=errors.paid_on,
+               attrs='max="%s"' % today) }}
+    </div>
+    <div class="row">
+      <div class="field{% if errors.method %} has-error{% endif %}">
+        <label for="method">Method *</label>
+        <select id="method" name="method" required>
+          {% for m in methods %}
+            <option value="{{ m }}" {% if values.method == m %}selected{% endif %}>{{ method_labels[m] }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.method %}<small class="error">{{ errors.method }}</small>{% endif %}
+      </div>
+      {{ field("reference", "Reference", values.reference, hint="UPI / UTR / cheque number (optional).") }}
+    </div>
+    <button type="submit" class="btn primary">Record payment</button>
+  </form>
+</div>
+{% elif invoice.status == "draft" %}
+<p class="muted">Mark the invoice as sent to start recording payments.</p>
+{% endif %}
+
+{% if logs %}
+<h2>Billed time entries</h2>
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Date</th><th>Description</th><th class="num">Duration</th></tr></thead>
+  <tbody>
+    {% for t in logs %}
+    <tr><td>{{ t.started_at[:10] }}</td><td>{{ t.description or "—" }}</td><td class="num">{{ t.duration_minutes|hours }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

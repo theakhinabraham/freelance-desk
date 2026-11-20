@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}Projects · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Projects</h1>
+  <a class="btn primary" href="/projects/new">+ New project</a>
+</div>
+
+<nav class="filters">
+  <a href="/projects" class="{{ 'current' if not status }}">All</a>
+  {% for s in statuses %}
+    <a href="/projects?status={{ s }}" class="{{ 'current' if status == s }}">{{ s|status_label }}</a>
+  {% endfor %}
+</nav>
+
+{% if projects %}
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr><th>Title</th><th>Client</th><th>Billing</th><th class="num">Rate / price</th><th>Status</th><th>Deadline</th></tr>
+  </thead>
+  <tbody>
+    {% for p in projects %}
+    <tr>
+      <td><a href="/projects/{{ p.id }}">{{ p.title }}</a></td>
+      <td><a href="/clients/{{ p.client_id }}">{{ p.client_name }}</a></td>
+      <td>{{ p.billing_type|capitalize }}</td>
+      <td class="num">
+        {% if p.billing_type == "hourly" %}{{ p.hourly_rate_paise|inr }}/h{% else %}{{ p.fixed_price_paise|inr }}{% endif %}
+      </td>
+      <td>{{ status_badge(p.status) }}</td>
+      <td>{{ p.deadline or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="card empty">
+  No projects{% if status %} with status "{{ status|status_label }}"{% endif %}.
+  <a href="/projects/new">Create one</a>.
+</div>
+{% endif %}
+{% endblock %}

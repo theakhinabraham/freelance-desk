@@ -1,0 +1,24 @@
+{# Reusable form pieces. Jinja escapes every value automatically, which prevents XSS. #}
+
+{% macro field(name, label, value="", type="text", error=None, required=False, hint=None, attrs="") %}
+<div class="field{% if error %} has-error{% endif %}">
+  <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+  <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
+         {% if required %}required{% endif %} {{ attrs|safe }}>
+  {#- attrs is written by us in the templates (never user input), so |safe is OK here. #}
+  {% if hint %}<small class="hint">{{ hint }}</small>{% endif %}
+  {% if error %}<small class="error">{{ error }}</small>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro textarea(name, label, value="", error=None) %}
+<div class="field{% if error %} has-error{% endif %}">
+  <label for="{{ name }}">{{ label }}</label>
+  <textarea id="{{ name }}" name="{{ name }}" rows="3">{{ value if value is not none else '' }}</textarea>
+  {% if error %}<small class="error">{{ error }}</small>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro status_badge(status) %}
+<span class="badge status-{{ status }}">{{ status|status_label }}</span>
+{% endmacro %}

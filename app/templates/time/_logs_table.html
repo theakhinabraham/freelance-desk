@@ -1,0 +1,42 @@
+{# Shared table of time entries. Needs: logs, and optionally return_to_project. #}
+{% if logs %}
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr>
+      <th>Date</th><th>Time</th>
+      {% if not return_to_project %}<th>Project</th>{% endif %}
+      <th>Description</th><th class="num">Duration</th><th>Billed</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in logs %}
+    <tr>
+      <td>{{ t.started_at[:10] }}</td>
+      <td>{{ t.started_at[11:16] }}–{{ t.ended_at[11:16] if t.ended_at else "…" }}</td>
+      {% if not return_to_project %}
+      <td><a href="/projects/{{ t.project_id }}">{{ t.project_title }}</a>
+        <span class="muted small">{{ t.client_name }}</span></td>
+      {% endif %}
+      <td>{{ t.description or "—" }}</td>
+      <td class="num">
+        {% if t.ended_at %}{{ t.duration_minutes|hours }}{% else %}<span class="badge status-active">Running</span>{% endif %}
+      </td>
+      <td>{{ t.invoice_number or "—" }}</td>
+      <td class="num">
+        {% if t.ended_at and not t.invoice_id %}
+        <form method="post" action="/time/{{ t.id }}/delete" class="inline"
+              onsubmit="return confirm('Delete this time entry?');">
+          {% if return_to_project %}<input type="hidden" name="return_to_project" value="{{ return_to_project }}">{% endif %}
+          <button type="submit" class="link danger-link">Delete</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="card empty">No time logged yet.</div>
+{% endif %}

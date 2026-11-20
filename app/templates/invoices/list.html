@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Invoices · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Invoices</h1>
+  <div class="actions">
+    <span class="muted small">Create an invoice from a project's page.</span>
+    <a class="btn" href="/export/payments.csv">Export payments (CSV)</a>
+  </div>
+</div>
+
+<nav class="filters">
+  <a href="/invoices" class="{{ 'current' if not status }}">All</a>
+  {% for s in statuses %}
+    <a href="/invoices?status={{ s }}" class="{{ 'current' if status == s }}">{{ s|status_label }}</a>
+  {% endfor %}
+</nav>
+
+{% include "invoices/_table.html" %}
+{% endblock %}

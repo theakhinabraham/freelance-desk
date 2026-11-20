@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}Register · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Create an account</h1>
+  <form method="post" action="/register">
+    {{ field("name", "Your name", values.name, required=True, error=errors.name) }}
+    {{ field("email", "Email", values.email, type="email", required=True, error=errors.email,
+             attrs='autocomplete="email"') }}
+    {{ field("password", "Password", type="password", required=True, error=errors.password,
+             hint="At least 8 characters.", attrs='autocomplete="new-password"') }}
+    {{ field("confirm_password", "Confirm password", type="password", required=True,
+             error=errors.confirm_password, attrs='autocomplete="new-password"') }}
+    <button type="submit" class="btn primary">Register</button>
+  </form>
+  <p class="muted">Already registered? <a href="/login">Log in</a></p>
+</div>
+{% endblock %}

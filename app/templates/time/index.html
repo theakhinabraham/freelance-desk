@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}Time · FreelanceDesk{% endblock %}
+{% block content %}
+<h1>Time tracking</h1>
+
+{% include "time/_timer_card.html" %}
+
+<div class="stats">
+  <div class="card stat">
+    <div class="stat-label">Today</div>
+    <div class="stat-value">{{ summary.today_minutes|hours }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">This week (since Monday)</div>
+    <div class="stat-value">{{ summary.week_minutes|hours }}</div>
+  </div>
+</div>
+<p class="muted small">Totals include the running timer.</p>
+
+{% if by_project %}
+<h2>This week by project</h2>
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Project</th><th>Client</th><th class="num">Hours</th></tr></thead>
+  <tbody>
+    {% for row in by_project %}
+    <tr>
+      <td><a href="/projects/{{ row.id }}">{{ row.title }}</a></td>
+      <td>{{ row.client_name }}</td>
+      <td class="num">{{ row.minutes|hours }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+
+<h2 id="manual">Add past time</h2>
+<div class="card">
+  {% if errors.form %}<div class="flash bad">{{ errors.form }}</div>{% endif %}
+  {% if projects %}
+  <form method="post" action="/time/manual#manual">
+    <div class="row">
+      <div class="field{% if errors.project_id %} has-error{% endif %}">
+        <label for="manual_project">Project *</label>
+        <select id="manual_project" name="project_id" required>
+          <option value="">Choose a project…</option>
+          {% for p in projects %}
+            <option value="{{ p.id }}" {% if p.id|string == values.project_id %}selected{% endif %}>{{ p.title }} · {{ p.client_name }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.project_id %}<small class="error">{{ errors.project_id }}</small>{% endif %}
+      </div>
+      {{ field("date", "Date", values.date or today, type="date", required=True, error=errors.date,
+               attrs='max="%s"' % today) }}
+    </div>
+    <div class="row">
+      {{ field("start_time", "From", values.start_time, type="time", required=True, error=errors.start_time) }}
+      {{ field("end_time", "To", values.end_time, type="time", required=True, error=errors.end_time) }}
+    </div>
+    {{ field("description", "Description", values.description) }}
+    <button type="submit" class="btn primary">Add entry</button>
+  </form>
+  {% else %}
+  <span class="muted">No active projects to log time against.</span>
+  {% endif %}
+</div>
+
+<div class="page-head">
+  <h2>Recent entries</h2>
+  <a class="btn" href="/export/time_logs.csv">Export all time logs (CSV)</a>
+</div>
+{% include "time/_logs_table.html" %}
+{% endblock %}

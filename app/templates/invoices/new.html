@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}New invoice · FreelanceDesk{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/projects/{{ project.id }}">{{ project.title }}</a> /</p>
+<div class="card narrow">
+  <h1>New invoice</h1>
+  <p class="muted">{{ project.client_name }} · {{ project.title }}</p>
+
+  <div class="card note">
+    {% if project.billing_type == "hourly" %}
+      {% if prefill.log_count %}
+        <strong>{{ prefill.minutes|hours }}</strong> unbilled in {{ prefill.log_count }} entr{{ "y" if prefill.log_count == 1 else "ies" }}
+        × {{ project.hourly_rate_paise|inr }}/h = <strong>{{ prefill.amount_paise|inr }}</strong>.
+        These entries will be marked as billed on this invoice.
+      {% else %}
+        There are no unbilled hours on this project. You can still enter an amount by hand.
+      {% endif %}
+    {% else %}
+      Fixed price {{ project.fixed_price_paise|inr }}; already invoiced
+      {{ prefill.already_invoiced_paise|inr }}; remaining <strong>{{ prefill.amount_paise|inr }}</strong>.
+    {% endif %}
+  </div>
+
+  {% if errors.form %}<div class="flash bad">{{ errors.form }}</div>{% endif %}
+  <form method="post" action="/invoices/new">
+    <input type="hidden" name="project_id" value="{{ project.id }}">
+    <input type="hidden" name="cutoff" value="{{ values.cutoff }}">
+    {{ field("amount", "Amount (₹)",
+             values.amount if values.amount is defined else values.amount_paise|rupees_input,
+             required=True, error=errors.amount, attrs='inputmode="decimal"',
+             hint="Pre-filled from the project; you can change it.") }}
+    <div class="row">
+      {{ field("issue_date", "Issue date", values.issue_date, type="date", required=True, error=errors.issue_date) }}
+      {{ field("due_date", "Due date", values.due_date, type="date", required=True, error=errors.due_date) }}
+    </div>
+    <div class="actions">
+      <button type="submit" name="action" value="send" class="btn primary">Create and mark as sent</button>
+      <button type="submit" name="action" value="draft" class="btn">Save as draft</button>
+      <a class="btn" href="/projects/{{ project.id }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

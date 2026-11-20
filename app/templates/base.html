@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}FreelanceDesk{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">FreelanceDesk</a>
+    <nav>
+      {% if user %}
+        <a href="/dashboard">Dashboard</a>
+        <a href="/clients">Clients</a>
+        <a href="/projects">Projects</a>
+        <a href="/time">Time</a>
+        <a href="/invoices">Invoices</a>
+        <a href="/reports">Reports</a>
+        <span class="muted">{{ user.name }}</span>
+        <form method="post" action="/logout" class="inline">
+          <button type="submit" class="link">Log out</button>
+        </form>
+      {% else %}
+        <a href="/login">Log in</a>
+        <a href="/register">Register</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    {% for f in flashes %}
+      <div class="flash {{ f.category }}">{{ f.message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

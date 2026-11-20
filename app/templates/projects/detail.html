@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge %}
+{% block title %}{{ project.title }} · FreelanceDesk{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/clients/{{ project.client_id }}">{{ project.client_name }}</a> /</p>
+<div class="page-head">
+  <h1>{{ project.title }} {{ status_badge(project.status) }}</h1>
+  <div class="actions">
+    <a class="btn" href="/projects/{{ project.id }}/edit">Edit</a>
+    <form method="post" action="/projects/{{ project.id }}/delete" class="inline"
+          onsubmit="return confirm('Delete this project and all its time logs?');">
+      <button type="submit" class="btn danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <dl class="facts">
+    <dt>Client</dt><dd><a href="/clients/{{ project.client_id }}">{{ project.client_name }}</a></dd>
+    <dt>Billing</dt>
+    <dd>
+      {% if project.billing_type == "hourly" %}Hourly at {{ project.hourly_rate_paise|inr }}/h
+      {% else %}Fixed price of {{ project.fixed_price_paise|inr }}{% endif %}
+    </dd>
+    <dt>Estimated hours</dt><dd>{{ project.estimated_hours or "—" }}</dd>
+    <dt>Hours logged</dt><dd>{{ summary.logged_minutes|hours }}</dd>
+    <dt>Invoices</dt><dd>{{ summary.invoice_count }}</dd>
+    <dt>Start date</dt><dd>{{ project.start_date or "—" }}</dd>
+    <dt>Deadline</dt><dd>{{ project.deadline or "—" }}</dd>
+  </dl>
+</div>
+
+<h2>Time</h2>
+{% include "time/_timer_card.html" %}
+
+<div class="page-head">
+  <h2>Invoices</h2>
+  <a class="btn primary" href="/invoices/new?project_id={{ project.id }}">+ Create invoice</a>
+</div>
+{% include "invoices/_table.html" %}
+
+<h2>Time entries</h2>
+{% include "time/_logs_table.html" %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Health · FreelanceDesk{% endblock %}
+{% block content %}
+<h1>System health</h1>
+
+<div class="card">
+  <dl class="facts">
+    <dt>Status</dt><dd><span class="badge ok">OK</span></dd>
+    <dt>SQLite version</dt><dd>{{ sqlite_version }}</dd>
+    <dt>Foreign keys</dt>
+    <dd>
+      {% if foreign_keys_on %}<span class="badge ok">ON</span>
+      {% else %}<span class="badge bad">OFF</span>{% endif %}
+    </dd>
+    <dt>Database file</dt><dd><code>{{ db_path }}</code></dd>
+  </dl>
+</div>
+
+<h2>Row counts</h2>
+<table class="table">
+  <thead><tr><th>Table</th><th class="num">Rows</th></tr></thead>
+  <tbody>
+    {% for row in counts %}
+    <tr><td>{{ row.table_name }}</td><td class="num">{{ row.row_count }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

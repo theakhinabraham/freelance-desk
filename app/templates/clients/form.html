@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, textarea %}
+{% block title %}{{ "Edit client" if client else "New client" }} · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{{ "Edit client" if client else "New client" }}</h1>
+  <form method="post" action="{{ '/clients/%d/edit' % client.id if client else '/clients/new' }}">
+    {{ field("name", "Name", values.name, required=True, error=errors.name) }}
+    {{ field("email", "Email", values.email, type="email", error=errors.email) }}
+    {{ field("phone", "Phone", values.phone, type="tel") }}
+    {{ textarea("notes", "Notes", values.notes) }}
+    <div class="actions">
+      <button type="submit" class="btn primary">Save</button>
+      <a class="btn" href="{{ '/clients/%d' % client.id if client else '/clients' }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

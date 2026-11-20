@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · FreelanceDesk{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stats">
+  <div class="card stat">
+    <div class="stat-label">Earned this month</div>
+    <div class="stat-value">{{ totals.earned_this_month_paise|inr }}</div>
+    <div class="muted small">Payments received since the 1st</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Outstanding</div>
+    <div class="stat-value">{{ totals.outstanding_paise|inr }}</div>
+    <div class="muted small">Unpaid balance on sent and overdue invoices</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Overdue</div>
+    <div class="stat-value {{ 'text-bad' if totals.overdue_paise }}">{{ totals.overdue_paise|inr }}</div>
+    <div class="muted small"><a href="/invoices?status=overdue">Past due date and not paid</a></div>
+  </div>
+</div>
+
+<h2>Effective hourly rate</h2>
+<div class="card formula">
+  <strong>Effective hourly rate = total payments received ÷ total hours logged</strong>
+  <div class="muted small">
+    Lowest first. This is what each hour of work has actually earned so far. It drops below the
+    quoted rate when hours are unbilled, invoices are unpaid, or a fixed price took longer than planned.
+  </div>
+</div>
+
+<div class="stack">
+  <section>
+    <h3>By client</h3>
+    <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Client</th><th class="num">Received</th><th class="num">Hours</th><th class="num">Rate</th></tr></thead>
+      <tbody>
+        {% for r in by_client %}
+        <tr class="{{ 'row-low' if loop.first and r.effective_rate_paise is not none }}">
+          <td><a href="/clients/{{ r.client_id }}">{{ r.client_name }}</a></td>
+          <td class="num">{{ r.received_paise|inr }}</td>
+          <td class="num">{{ r.minutes|hours }}</td>
+          <td class="num"><strong>{{ (r.effective_rate_paise|inr) ~ "/h" if r.effective_rate_paise is not none else "—" }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h3>By project</h3>
+    <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Project</th><th class="num">Received</th><th class="num">Hours</th><th class="num">Quoted</th><th class="num">Effective</th></tr></thead>
+      <tbody>
+        {% for r in by_project %}
+        <tr class="{{ 'row-low' if loop.first and r.effective_rate_paise is not none }}">
+          <td><a href="/projects/{{ r.project_id }}">{{ r.project_title }}</a>
+            <div class="muted small">{{ r.client_name }}</div></td>
+          <td class="num">{{ r.received_paise|inr }}</td>
+          <td class="num">{{ r.minutes|hours }}</td>
+          <td class="num muted">{{ (r.quoted_rate_paise|inr) ~ "/h" if r.quoted_rate_paise else "Fixed" }}</td>
+          <td class="num"><strong>{{ (r.effective_rate_paise|inr) ~ "/h" if r.effective_rate_paise is not none else "—" }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+</div>
+
+<div class="two-col">
+  <section class="card chart-card">
+    <h3>Income by month</h3>
+    <div class="muted small">Payments received, last 12 months</div>
+    <div class="chart-box"><canvas id="incomeChart" role="img" aria-label="Bar chart of income per month for the last 12 months"></canvas></div>
+    <details>
+      <summary>Show as table</summary>
+      <table class="table compact">
+        <thead><tr><th>Month</th><th class="num">Income</th></tr></thead>
+        <tbody>{% for r in income %}<tr><td>{{ r.month }}</td><td class="num">{{ r.income_paise|inr }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </details>
+  </section>
+
+  <section class="card chart-card">
+    <h3>Hours by client</h3>
+    <div class="muted small">All finished time entries</div>
+    <div class="chart-box"><canvas id="hoursChart" role="img" aria-label="Bar chart of hours logged per client"></canvas></div>
+    <details>
+      <summary>Show as table</summary>
+      <table class="table compact">
+        <thead><tr><th>Client</th><th class="num">Hours</th></tr></thead>
+        <tbody>{% for r in by_client if r.minutes %}<tr><td>{{ r.client_name }}</td><td class="num">{{ r.minutes|hours }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </details>
+  </section>
+</div>
+
+{# Chart data as JSON. tojson escapes it safely for embedding in HTML. #}
+<script id="chart-data" type="application/json">{{ charts|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  // Display-only conversion: paise -> rupees, minutes -> hours.
+  const data = JSON.parse(document.getElementById("chart-data").textContent);
+  const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+  // One unit on the whole axis: thousands of rupees (e.g. ₹20k, ₹90k, ₹100k).
+  const thousands = v => "₹" + (v / 1000).toLocaleString("en-IN") + "k";
+  const SERIES = "#2a78d6", GRID = "#e9ecef", TEXT = "#616e7c";
+
+  Chart.defaults.color = TEXT;
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+
+  const bar = {
+    backgroundColor: SERIES, hoverBackgroundColor: "#1f5fae",
+    maxBarThickness: 24, borderSkipped: "start", borderRadius: 4,
+  };
+  const common = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },   // one series: the title names it
+    interaction: { mode: "index", intersect: false },
+  };
+
+  new Chart(document.getElementById("incomeChart"), {
+    type: "bar",
+    data: { labels: data.income.labels,
+            datasets: [{ ...bar, label: "Income", data: data.income.paise.map(p => p / 100) }] },
+    options: { ...common,
+      plugins: { ...common.plugins, tooltip: { callbacks: { label: c => inr.format(c.parsed.y) } } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: GRID }, border: { display: false },
+             ticks: { callback: thousands } },
+      } },
+  });
+
+  new Chart(document.getElementById("hoursChart"), {
+    type: "bar",
+    data: { labels: data.hours.labels,
+            datasets: [{ ...bar, label: "Hours", data: data.hours.minutes.map(m => +(m / 60).toFixed(1)) }] },
+    options: { ...common, indexAxis: "y", interaction: { mode: "index", axis: "y", intersect: false },
+      plugins: { ...common.plugins, tooltip: { callbacks: { label: c => c.parsed.x + " h" } } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: GRID }, border: { display: false },
+             ticks: { callback: v => v + " h" } },
+        y: { grid: { display: false } },
+      } },
+  });
+</script>
+{% endblock %}

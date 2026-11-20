@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}{{ "Edit project" if project else "New project" }} · FreelanceDesk{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{{ "Edit project" if project else "New project" }}</h1>
+
+  {% if not clients %}
+    <p>You need a client before you can create a project. <a href="/clients/new">Add a client</a>.</p>
+  {% else %}
+  <form method="post" action="{{ '/projects/%d/edit' % project.id if project else '/projects/new' }}">
+    <div class="field{% if errors.client_id %} has-error{% endif %}">
+      <label for="client_id">Client *</label>
+      <select id="client_id" name="client_id" required>
+        <option value="">Choose a client…</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}" {% if c.id|string == values.client_id|string %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      {% if errors.client_id %}<small class="error">{{ errors.client_id }}</small>{% endif %}
+    </div>
+
+    {{ field("title", "Title", values.title, required=True, error=errors.title) }}
+
+    <div class="field{% if errors.billing_type %} has-error{% endif %}">
+      <label>Billing type *</label>
+      <div class="radios">
+        <label><input type="radio" name="billing_type" value="hourly"
+               {% if values.billing_type == "hourly" %}checked{% endif %}> Hourly</label>
+        <label><input type="radio" name="billing_type" value="fixed"
+               {% if values.billing_type == "fixed" %}checked{% endif %}> Fixed price</label>
+      </div>
+      {% if errors.billing_type %}<small class="error">{{ errors.billing_type }}</small>{% endif %}
+    </div>
+
+    <div class="row">
+      {# On a re-shown form, use the raw text the user typed; otherwise convert paise to rupees. #}
+      {{ field("hourly_rate", "Hourly rate (₹)",
+               values.hourly_rate if values.hourly_rate is defined else values.hourly_rate_paise|rupees_input,
+               attrs='inputmode="decimal"', hint="Used when billing type is Hourly.",
+               error=errors.hourly_rate_paise) }}
+      {{ field("fixed_price", "Fixed price (₹)",
+               values.fixed_price if values.fixed_price is defined else values.fixed_price_paise|rupees_input,
+               attrs='inputmode="decimal"', hint="Used when billing type is Fixed price.",
+               error=errors.fixed_price_paise) }}
+    </div>
+
+    <div class="row">
+      {{ field("estimated_hours", "Estimated hours", values.estimated_hours, type="number",
+               attrs='min="1" step="1"', error=errors.estimated_hours, hint="Optional.") }}
+      <div class="field{% if errors.status %} has-error{% endif %}">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ s|status_label }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.status %}<small class="error">{{ errors.status }}</small>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      {{ field("start_date", "Start date", values.start_date, type="date", error=errors.start_date) }}
+      {{ field("deadline", "Deadline", values.deadline, type="date", error=errors.deadline) }}
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn primary">Save</button>
+      <a class="btn" href="{{ '/projects/%d' % project.id if project else '/projects' }}">Cancel</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

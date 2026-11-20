@@ -1,0 +1,5 @@
+{# Status badge, plus a "partially paid" note when 0 < paid < amount. Needs: inv #}
+<span class="badge status-{{ inv.status }}">{{ inv.status|status_label }}</span>
+{% if inv.status in ("sent", "overdue") and inv.paid_paise > 0 %}
+  <span class="badge status-partial">Partially paid</span>
+{% endif %}
